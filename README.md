@@ -21,7 +21,7 @@ there's nothing to click.
 
 ## Download
 
-1. Download **AntiClick-1.1.0.dmg** from the
+1. Download the **AntiClick `.dmg`** from the
    [latest release](https://github.com/kevinwells22/AntiClick/releases/latest).
 2. Open it and drag **AntiClick** to **Applications**.
 3. Open AntiClick from Applications.
@@ -46,14 +46,19 @@ prevents clicks while it's running, so you'll usually want **Open at Login**.
 
 ## Using it
 
-The icon next to the clock shows what AntiClick is doing:
+AntiClick's icon is a small wave burst, so you can't confuse it with macOS's Sound icon. It
+shows what AntiClick is doing:
+
+<p align="center">
+  <img src="docs/menubar-icons.png" width="540" alt="AntiClick's menu-bar icon in its four states, on light and dark menu bars">
+</p>
 
 | Icon | Meaning |
 |---|---|
-| Speaker with sound waves | Keeping your USB device awake, so no clicks |
-| Plain speaker | Idle: the current output isn't a USB device (for example built-in speakers or AirPods) |
-| Speaker with a slash | Paused |
-| Speaker with "!" | Waiting: another app is using the device exclusively |
+| **Active** (solid wave) | Keeping your USB device awake, so no clicks |
+| **Idle** (faded wave) | The current output isn't a USB device (for example built-in speakers or AirPods) |
+| **Paused** (wave with a slash) | Turned off from the menu |
+| **Waiting** (faded wave with "!") | Another app is using the device exclusively |
 
 Click it for the menu:
 
@@ -187,7 +192,7 @@ ruby tools/pidstat.rb --seconds 30 <pid>   # CPU, wakeups and memory of a proces
 ## Project layout
 
 ```
-app/          menu-bar app (Swift/AppKit), Info.plist template, icon generator
+app/          menu-bar app (Swift/AppKit), its menu-bar and app icons, Info.plist template
 src/          engine.c / engine.h (shared engine), anticlick.c (command-line agent)
 scripts/      install, uninstall and status scripts for the agent
 tools/        CoreAudio diagnostics and resource measurement (built-in Ruby)

@@ -84,27 +84,24 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func refreshIcon() {
         guard let button = statusItem?.button else { return }
-        let symbol: String
+        let icon: MenuBarIcon.State
         let tip: String
         switch state {
         case .paused:
-            symbol = "speaker.slash"
+            icon = .paused
             tip = "AntiClick is paused"
         case .holding(let names):
-            symbol = "speaker.wave.2.fill"
+            icon = .active
             tip = "AntiClick is keeping \(Self.list(names)) awake"
         case .waiting(let name, _):
-            symbol = "speaker.badge.exclamationmark"
+            icon = .waiting
             tip = "AntiClick is waiting for \(Self.quoted(name))"
         case .idle(let output):
-            symbol = "speaker"
+            icon = .idle
             tip = output.isEmpty ? "AntiClick: no output device"
                                  : "AntiClick: \(Self.quoted(output)) doesn't need holding"
         }
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: tip)
-            ?? NSImage(systemSymbolName: "speaker", accessibilityDescription: tip)
-        image?.isTemplate = true
-        button.image = image
+        button.image = MenuBarIcon.image(for: icon, description: tip)
         button.toolTip = tip
     }
 
@@ -276,9 +273,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 }
 
-MainActor.assumeIsolated {
-    let app = NSApplication.shared
-    let controller = AppController()
-    app.delegate = controller
-    app.run()
+@main
+struct AntiClickMain {
+    static func main() {
+        MainActor.assumeIsolated {
+            let app = NSApplication.shared
+            let controller = AppController()
+            app.delegate = controller
+            app.run()
+        }
+    }
 }

@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #ifndef AC_VERSION
-#define AC_VERSION "1.1.0"
+#define AC_VERSION "1.1.1"
 #endif
 /* Unified-log subsystem (filter for it in Console.app). */
 #ifndef AC_LOG_SUBSYSTEM

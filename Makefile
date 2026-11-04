@@ -1,10 +1,11 @@
 # AntiClick - build, install and package.
 #
 # Menu-bar app (recommended)
-#   make app              build build/AntiClick.app (universal: Apple silicon + Intel)
+#   make app              build AntiClick.app (in ~/Library/Caches/AntiClick-build)
 #   make install-app      copy it to /Applications and open it (replaces the agent)
 #   make dmg              build build/AntiClick-<version>.dmg to give to other people
 #   make notarize         notarize + staple the DMG (needs a Developer ID; see README)
+#   make docs-images      redraw docs/menubar-icons.png (the README's icon preview)
 #
 # Command-line agent (no UI)
 #   make                  build build/anticlick
@@ -12,8 +13,8 @@
 #   make uninstall        remove the login agent
 #   make status | list | log
 
-VERSION    := 1.1.0
-BUILD_NUM  ?= 2
+VERSION    := 1.1.1
+BUILD_NUM  ?= 3
 BUILD      := build
 CFLAGS     ?= -Os -Wall -Wextra -Wno-unused-parameter
 DEFS       := -DAC_VERSION=\"$(VERSION)\"
@@ -50,7 +51,7 @@ DMG        := $(LOCAL_BUILD)/$(DMG_NAME)
 # "-" means ad-hoc signing, which can't carry a secure timestamp.
 SIGN_FLAGS := --force --options runtime --sign "$(SIGN_ID)" $(if $(filter -,$(SIGN_ID)),,--timestamp)
 
-.PHONY: all app install-app dmg notarize install uninstall status list log experiments clean
+.PHONY: all app install-app dmg notarize docs-images install uninstall status list log experiments clean
 
 all: $(BIN)
 
@@ -83,15 +84,15 @@ log:
 
 app: $(APP)
 
-$(APP): app/AntiClick.swift app/Info.plist app/make-icon.swift $(ENGINE) Makefile
+$(APP): app/AntiClick.swift app/MenuBarIcon.swift app/Info.plist app/make-icon.swift $(ENGINE) Makefile
 	@rm -rf $@ $(APP_TMP) && mkdir -p $(APP_TMP) $@/Contents/MacOS $@/Contents/Resources
 	@for arch in $(APP_ARCHS); do \
 	    echo "compiling for $$arch"; \
 	    $(CC) $(CFLAGS) $(DEFS) -arch $$arch -mmacosx-version-min=$(APP_MINOS) \
 	        -c src/engine.c -o $(APP_TMP)/engine-$$arch.o || exit 1; \
-	    swiftc -O -swift-version 5 -target $$arch-apple-macos$(APP_MINOS) \
-	        -import-objc-header src/engine.h app/AntiClick.swift $(APP_TMP)/engine-$$arch.o \
-	        $(FRAMEWORKS) -o $(APP_TMP)/$(APP_NAME)-$$arch || exit 1; \
+	    swiftc -O -swift-version 5 -parse-as-library -target $$arch-apple-macos$(APP_MINOS) \
+	        -import-objc-header src/engine.h app/AntiClick.swift app/MenuBarIcon.swift \
+	        $(APP_TMP)/engine-$$arch.o $(FRAMEWORKS) -o $(APP_TMP)/$(APP_NAME)-$$arch || exit 1; \
 	done
 	lipo -create $(foreach a,$(APP_ARCHS),$(APP_TMP)/$(APP_NAME)-$(a)) -output $@/Contents/MacOS/$(APP_NAME)
 	sed -e 's|@VERSION@|$(VERSION)|; s|@BUILD@|$(BUILD_NUM)|; s|@BUNDLE_ID@|$(BUNDLE_ID)|' \
@@ -120,11 +121,16 @@ dmg: $(APP)
 	ditto --norsrc --noextattr --noacl $(APP) "$$stage/$(APP_NAME).app"; \
 	ln -s /Applications "$$stage/Applications"; \
 	rm -f $(DMG); \
-	hdiutil create -quiet -volname "$(APP_NAME)" -srcfolder "$$stage" -ov -format UDZO $(DMG); \
+	hdiutil create -quiet -volname "$(APP_NAME)" -srcfolder "$$stage" -fs HFS+ -format ULMO -ov $(DMG); \
 	rm -rf "$$stage"
 	$(if $(filter -,$(SIGN_ID)),,codesign --force --sign "$(SIGN_ID)" --timestamp $(DMG))
 	@mkdir -p $(BUILD) && cp $(DMG) $(BUILD)/$(DMG_NAME)
 	@echo "built $(BUILD)/$(DMG_NAME) ($$(du -h $(DMG) | cut -f1))"
+
+docs-images:
+	@mkdir -p $(APP_TMP)
+	swiftc -O -parse-as-library app/MenuBarIcon.swift app/make-menubar-preview.swift -o $(APP_TMP)/menubar-preview
+	$(APP_TMP)/menubar-preview docs/menubar-icons.png
 
 notarize: dmg
 	@if [ "$(SIGN_ID)" = "-" ]; then \
